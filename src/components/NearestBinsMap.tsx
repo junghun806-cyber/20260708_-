@@ -68,8 +68,14 @@ export default function NearestBinsMap({
         const infowindow = new kakao.maps.InfoWindow({
           content: infoWindowContent(location),
         });
+        let isOpen = false;
         kakao.maps.event.addListener(marker, "click", () => {
-          infowindow.open(map, marker);
+          if (isOpen) {
+            infowindow.close();
+          } else {
+            infowindow.open(map, marker);
+          }
+          isOpen = !isOpen;
         });
       }
 
@@ -91,8 +97,14 @@ export default function NearestBinsMap({
         const infowindow = new kakao.maps.InfoWindow({
           content: `<div style="padding:6px 10px;font-size:12px;color:#27272a;">📍 현재 위치</div>`,
         });
+        let isOpen = false;
         kakao.maps.event.addListener(marker, "click", () => {
-          infowindow.open(map, marker);
+          if (isOpen) {
+            infowindow.close();
+          } else {
+            infowindow.open(map, marker);
+          }
+          isOpen = !isOpen;
         });
       }
 
