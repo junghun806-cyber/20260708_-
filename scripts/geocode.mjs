@@ -12,7 +12,7 @@ if (!REST_API_KEY) {
   process.exit(1);
 }
 
-const DATA_PATH = path.resolve(import.meta.dirname, "../data/공원광장_쓰레기통.json");
+const DATA_PATH = path.resolve(import.meta.dirname, "../data/가로쓰레기통.json");
 const OUT_PATH = path.resolve(import.meta.dirname, "../data/geocoded.json");
 
 async function callKakao(url) {
@@ -62,13 +62,11 @@ async function geocode(address, detail) {
 
 const raw = JSON.parse(await fs.readFile(DATA_PATH, "utf-8"));
 
-// Dedup by 도로명주소 (many bins in the same park share the same address).
+// Dedup by 도로명주소 (many bins at the same spot share the same address).
 const uniqueAddresses = new Map();
-for (const park of raw) {
-  for (const bin of park.쓰레기통목록) {
-    if (!uniqueAddresses.has(bin.도로명주소)) {
-      uniqueAddresses.set(bin.도로명주소, bin.세부위치);
-    }
+for (const bin of raw) {
+  if (!uniqueAddresses.has(bin.도로명주소)) {
+    uniqueAddresses.set(bin.도로명주소, bin.세부위치);
   }
 }
 

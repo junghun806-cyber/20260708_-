@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "서울시 공원/광장 쓰레기통 찾기",
-  description: "서울시 공원과 광장의 쓰레기통 위치를 검색해보세요.",
+  title: "서울시 가로쓰레기통 찾기",
+  description: "서울시 전역에서 현재 위치와 가장 가까운 쓰레기통 10곳을 찾아보세요.",
 };
 
 export default function RootLayout({

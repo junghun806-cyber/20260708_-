@@ -1,4 +1,4 @@
-import type { Coordinates } from "@/types/park";
+import type { Coordinates } from "@/types/trashBin";
 
 export function haversineDistanceMeters(a: Coordinates, b: Coordinates): number {
   const EARTH_RADIUS_M = 6371000;
