@@ -72,7 +72,12 @@ export default function ParkResult({
 
       <ul className="flex flex-col gap-3">
         {bins.map((bin, i) => (
-          <TrashBinCard key={i} bin={bin} highlighted={bin === highlight?.bin} />
+          <TrashBinCard
+            key={i}
+            bin={bin}
+            parkName={park.공원광장명}
+            highlighted={bin === highlight?.bin}
+          />
         ))}
       </ul>
     </div>

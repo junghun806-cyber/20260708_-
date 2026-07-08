@@ -4,12 +4,15 @@ import { useState } from "react";
 import type { TrashBinWithCoords } from "@/types/park";
 import { getTrashTypeBadges } from "@/lib/trashType";
 import { buildKakaoDirectionsUrl, getCurrentPosition } from "@/lib/geo";
+import { logDirectionsClick } from "@/lib/analytics";
 
 export default function TrashBinCard({
   bin,
+  parkName,
   highlighted,
 }: {
   bin: TrashBinWithCoords;
+  parkName: string;
   highlighted?: boolean;
 }) {
   const [locating, setLocating] = useState(false);
@@ -21,8 +24,10 @@ export default function TrashBinCard({
     const coords = bin.coords;
     setError(null);
     setLocating(true);
+    let hadGeolocation = false;
     try {
       const position = await getCurrentPosition();
+      hadGeolocation = true;
       const url = buildKakaoDirectionsUrl(
         { name: bin.세부위치, lat: coords.lat, lng: coords.lng },
         {
@@ -42,6 +47,13 @@ export default function TrashBinCard({
       window.open(url, "_blank", "noopener,noreferrer");
     } finally {
       setLocating(false);
+      logDirectionsClick({
+        parkName,
+        detailLocation: bin.세부위치,
+        trashType: bin.쓰레기통종류,
+        gu: bin.자치구,
+        hadGeolocation,
+      });
     }
   }
 
