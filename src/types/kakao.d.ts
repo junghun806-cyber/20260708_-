@@ -28,6 +28,22 @@ interface KakaoInfoWindow {
   close(): void;
 }
 
+interface KakaoSize {
+  width: number;
+  height: number;
+}
+
+interface KakaoPoint {
+  x: number;
+  y: number;
+}
+
+interface KakaoMarkerImage {
+  // Opaque handle, only ever passed back into Marker options. The brand
+  // keeps this from collapsing into an empty-interface "any" type.
+  readonly __kakaoMarkerImageBrand: unique symbol;
+}
+
 interface KakaoNamespace {
   maps: {
     load(callback: () => void): void;
@@ -40,7 +56,16 @@ interface KakaoNamespace {
     Marker: new (options: {
       position: KakaoLatLng;
       map: KakaoMap;
+      image?: KakaoMarkerImage;
+      zIndex?: number;
     }) => KakaoMarker;
+    MarkerImage: new (
+      src: string,
+      size: KakaoSize,
+      options?: { offset?: KakaoPoint },
+    ) => KakaoMarkerImage;
+    Size: new (width: number, height: number) => KakaoSize;
+    Point: new (x: number, y: number) => KakaoPoint;
     InfoWindow: new (options: { content: string }) => KakaoInfoWindow;
     event: {
       addListener(

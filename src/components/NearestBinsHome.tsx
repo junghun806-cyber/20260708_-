@@ -1,12 +1,13 @@
 "use client";
 
 import { useState } from "react";
+import type { Coordinates } from "@/types/trashBin";
 import { findNearestBinLocations, type NearestBinLocationResult } from "@/lib/bins";
 
 export default function NearestBinsHome({
   onFound,
 }: {
-  onFound: (results: NearestBinLocationResult[]) => void;
+  onFound: (results: NearestBinLocationResult[], userLocation: Coordinates) => void;
 }) {
   const [locating, setLocating] = useState(false);
   const [geoError, setGeoError] = useState<string | null>(null);
@@ -32,7 +33,7 @@ export default function NearestBinsHome({
           setGeoError("가까운 쓰레기통 정보를 찾을 수 없습니다.");
           return;
         }
-        onFound(results);
+        onFound(results, point);
       },
       (error) => {
         setLocating(false);

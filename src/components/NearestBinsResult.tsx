@@ -1,12 +1,15 @@
+import type { Coordinates } from "@/types/trashBin";
 import type { NearestBinLocationResult } from "@/lib/bins";
 import TrashBinCard from "@/components/TrashBinCard";
 import NearestBinsMap from "@/components/NearestBinsMap";
 
 export default function NearestBinsResult({
   results,
+  userLocation,
   onBack,
 }: {
   results: NearestBinLocationResult[];
+  userLocation: Coordinates;
   onBack: () => void;
 }) {
   return (
@@ -26,7 +29,10 @@ export default function NearestBinsResult({
       </p>
 
       <div className="mb-4">
-        <NearestBinsMap locations={results.map((r) => r.location)} />
+        <NearestBinsMap
+          locations={results.map((r) => r.location)}
+          userLocation={userLocation}
+        />
       </div>
 
       <ul className="flex flex-col gap-3">
