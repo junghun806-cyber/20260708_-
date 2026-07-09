@@ -157,7 +157,7 @@ export default function NearestBinsMap({
       />
       <div
         ref={mapRef}
-        className="h-64 w-full rounded-xl border border-zinc-200 bg-zinc-100 dark:border-zinc-800 dark:bg-zinc-900"
+        className="h-64 w-full rounded-[14px] border border-[#dddddd] bg-[#f7f7f7] md:h-full dark:border-zinc-800 dark:bg-zinc-900"
       />
     </>
   );
