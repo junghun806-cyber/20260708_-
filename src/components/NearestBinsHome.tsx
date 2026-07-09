@@ -5,11 +5,18 @@ import type { Coordinates } from "@/types/trashBin";
 import { findNearestBinLocations, type NearestBinLocationResult } from "@/lib/bins";
 import { isMobileUserAgent, openInExternalBrowser } from "@/lib/inAppBrowser";
 
+// Kept short on purpose: users bail ("is this broken?") well before a 10s
+// wait, so we'd rather fail fast and hand them the external-browser escape
+// hatch than hold out for a slow GPS fix.
+const GEOLOCATION_TIMEOUT_MS = 5000;
+
 // Belt-and-suspenders on top of the native `timeout` option: some in-app
 // WebViews (notably KakaoTalk's) never invoke either geolocation callback at
 // all when location permission is blocked, so the native timeout never
-// fires either. This guarantees "위치 확인 중" always resolves.
-const GEOLOCATION_FALLBACK_TIMEOUT_MS = 12000;
+// fires either. This guarantees "위치 확인 중" always resolves — a small
+// buffer past GEOLOCATION_TIMEOUT_MS so a well-behaved browser's own
+// timeout error (with a real error code) wins the race.
+const GEOLOCATION_FALLBACK_TIMEOUT_MS = GEOLOCATION_TIMEOUT_MS + 500;
 
 export default function NearestBinsHome({
   onFound,
@@ -81,7 +88,7 @@ export default function NearestBinsHome({
           setGeoError("현재 위치를 가져오지 못했습니다. 다시 시도해주세요.");
         }
       },
-      { enableHighAccuracy: true, timeout: 10000 },
+      { enableHighAccuracy: true, timeout: GEOLOCATION_TIMEOUT_MS },
     );
   }
 
