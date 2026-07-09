@@ -3,7 +3,10 @@
 import { useEffect, useRef, useState } from "react";
 import Script from "next/script";
 import type { Coordinates, TrashBinLocation } from "@/types/trashBin";
+import type { KakaoInfoWindow, KakaoMap, KakaoMarker } from "@/types/kakao";
 import { getTrashTypeBadges } from "@/lib/trashType";
+
+const FOCUS_ZOOM_LEVEL = 3;
 
 const KAKAO_JS_KEY = process.env.NEXT_PUBLIC_KAKAO_JS_KEY;
 
@@ -34,15 +37,25 @@ function infoWindowContent(location: TrashBinLocation) {
   `;
 }
 
+function locationKey(coords: Coordinates): string {
+  return `${coords.lat},${coords.lng}`;
+}
+
 export default function NearestBinsMap({
   locations,
   userLocation,
+  focusedKey,
 }: {
   locations: TrashBinLocation[];
   userLocation?: Coordinates;
+  focusedKey?: string | null;
 }) {
   const mapRef = useRef<HTMLDivElement>(null);
   const [sdkReady, setSdkReady] = useState(false);
+  const mapInstanceRef = useRef<KakaoMap | null>(null);
+  const markerEntriesRef = useRef(
+    new Map<string, { marker: KakaoMarker; infowindow: KakaoInfoWindow; isOpen: boolean }>(),
+  );
 
   useEffect(() => {
     if (!sdkReady || !mapRef.current || locations.length === 0) return;
@@ -56,6 +69,8 @@ export default function NearestBinsMap({
         center: new kakao.maps.LatLng(first.lat, first.lng),
         level: 4,
       });
+      mapInstanceRef.current = map;
+      markerEntriesRef.current.clear();
 
       const bounds = new kakao.maps.LatLngBounds();
 
@@ -68,14 +83,15 @@ export default function NearestBinsMap({
         const infowindow = new kakao.maps.InfoWindow({
           content: infoWindowContent(location),
         });
-        let isOpen = false;
+        const entry = { marker, infowindow, isOpen: false };
+        markerEntriesRef.current.set(locationKey(location.coords), entry);
         kakao.maps.event.addListener(marker, "click", () => {
-          if (isOpen) {
+          if (entry.isOpen) {
             infowindow.close();
           } else {
             infowindow.open(map, marker);
           }
-          isOpen = !isOpen;
+          entry.isOpen = !entry.isOpen;
         });
       }
 
@@ -111,6 +127,24 @@ export default function NearestBinsMap({
       if (locations.length > 1 || userLocation) map.setBounds(bounds);
     });
   }, [sdkReady, locations, userLocation]);
+
+  useEffect(() => {
+    if (!focusedKey) return;
+    const map = mapInstanceRef.current;
+    const entry = markerEntriesRef.current.get(focusedKey);
+    if (!map || !entry) return;
+
+    const { kakao } = window;
+    const location = locations.find((l) => locationKey(l.coords) === focusedKey);
+    if (!location) return;
+
+    map.panTo(new kakao.maps.LatLng(location.coords.lat, location.coords.lng));
+    map.setLevel(FOCUS_ZOOM_LEVEL);
+    if (!entry.isOpen) {
+      entry.infowindow.open(map, entry.marker);
+      entry.isOpen = true;
+    }
+  }, [focusedKey, locations]);
 
   if (locations.length === 0) return null;
 

@@ -6,7 +6,7 @@ declare global {
   }
 }
 
-interface KakaoLatLng {
+export interface KakaoLatLng {
   getLat(): number;
   getLng(): number;
 }
@@ -15,15 +15,18 @@ interface KakaoLatLngBounds {
   extend(latlng: KakaoLatLng): void;
 }
 
-interface KakaoMap {
+export interface KakaoMap {
   setBounds(bounds: KakaoLatLngBounds): void;
+  setCenter(latlng: KakaoLatLng): void;
+  setLevel(level: number): void;
+  panTo(latlng: KakaoLatLng): void;
 }
 
-interface KakaoMarker {
+export interface KakaoMarker {
   setMap(map: KakaoMap | null): void;
 }
 
-interface KakaoInfoWindow {
+export interface KakaoInfoWindow {
   open(map: KakaoMap, marker: KakaoMarker): void;
   close(): void;
 }

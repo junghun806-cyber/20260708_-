@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type MouseEvent } from "react";
 import type { TrashBinLocation } from "@/types/trashBin";
 import { getTrashTypeBadges } from "@/lib/trashType";
 import { buildKakaoDirectionsUrl, formatDistance, getCurrentPosition } from "@/lib/geo";
@@ -10,16 +10,19 @@ export default function TrashBinCard({
   location,
   distanceMeters,
   rank,
+  onSelect,
 }: {
   location: TrashBinLocation;
   distanceMeters: number;
   rank: number;
+  onSelect?: () => void;
 }) {
   const [locating, setLocating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const badges = location.쓰레기통종류목록.flatMap((type) => getTrashTypeBadges(type));
 
-  async function handleDirectionsClick() {
+  async function handleDirectionsClick(e: MouseEvent) {
+    e.stopPropagation();
     const coords = location.coords;
     setError(null);
     setLocating(true);
@@ -58,7 +61,22 @@ export default function TrashBinCard({
 
   return (
     <li
+      onClick={onSelect}
+      role={onSelect ? "button" : undefined}
+      tabIndex={onSelect ? 0 : undefined}
+      onKeyDown={
+        onSelect
+          ? (e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                onSelect();
+              }
+            }
+          : undefined
+      }
       className={`rounded-xl border bg-white p-4 shadow-sm dark:bg-zinc-900 ${
+        onSelect ? "cursor-pointer" : ""
+      } ${
         rank === 0
           ? "border-blue-400 ring-2 ring-blue-200 dark:border-blue-500 dark:ring-blue-900/50"
           : "border-zinc-200 dark:border-zinc-800"
