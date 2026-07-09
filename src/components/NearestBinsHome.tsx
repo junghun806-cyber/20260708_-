@@ -1,9 +1,15 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Inter } from "next/font/google";
 import type { Coordinates } from "@/types/trashBin";
 import { findNearestBinLocations, type NearestBinLocationResult } from "@/lib/bins";
 import { isMobileUserAgent, openInExternalBrowser } from "@/lib/inAppBrowser";
+import TrashBinHeroIllustration from "@/components/TrashBinHeroIllustration";
+
+// Same Airbnb-redesign font as the results screen — scoped here only, so
+// step 3 (the external Kakao Maps handoff) is unaffected.
+const inter = Inter({ subsets: ["latin"], weight: ["400", "600", "700", "800", "900"] });
 
 // Kept short on purpose: users bail ("is this broken?") well before a 10s
 // wait, so we'd rather fail fast and hand them the external-browser escape
@@ -93,27 +99,47 @@ export default function NearestBinsHome({
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-md flex-1 flex-col items-center justify-center px-4 py-10 text-center sm:py-16">
-      <h1 className="mb-2 text-2xl font-bold text-zinc-900 dark:text-zinc-50">
+    <div
+      className={`${inter.className} mx-auto flex w-full max-w-3xl flex-1 flex-col items-center justify-center overflow-hidden px-4 py-10 text-center sm:py-16`}
+    >
+      <p className="mb-3 text-xs font-bold uppercase tracking-[0.14em] text-[#ff385c]">
         서울시 전역 쓰레기통 찾기
-      </h1>
-      <p className="mb-8 text-sm text-zinc-500 dark:text-zinc-400">
-        긴급 버튼을 누르면 서울시 전역에서 현재 위치와 가장 가까운 쓰레기통
-        10곳을 찾아드려요.
+      </p>
+
+      <div className="mb-8 w-full max-w-xl">
+        <h1 className="hero-headline select-none text-[16vw] font-black leading-[0.86] tracking-tight text-[#222222] sm:text-[6.5rem] dark:text-zinc-50">
+          버리GO
+          <br />
+          <span className="inline-flex items-center justify-center gap-[0.12em]">
+            가자
+            <span
+              className="hero-photo inline-block w-[0.85em] shrink-0 align-middle"
+              style={{ aspectRatio: "5 / 6" }}
+            >
+              <TrashBinHeroIllustration />
+            </span>
+            GO
+          </span>
+        </h1>
+      </div>
+
+      <p className="mb-8 max-w-xs text-sm text-[#6a6a6a] dark:text-zinc-400">
+        버튼 하나로 서울시 전역에서 현재 위치와 가장 가까운 쓰레기통 10곳을
+        찾아드려요.
       </p>
 
       <button
         type="button"
         onClick={handleEmergencyClick}
         disabled={locating}
-        className="flex items-center gap-2 rounded-full bg-red-600 px-8 py-4 text-lg font-semibold text-white shadow-lg hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-70"
+        className="flex items-center gap-2 rounded-full bg-[#ff385c] px-8 py-4 text-lg font-semibold text-white shadow-[0_2px_10px_rgba(255,56,92,0.35)] hover:bg-[#e00b41] disabled:cursor-not-allowed disabled:bg-[#ffd1da] disabled:shadow-none"
       >
-        {locating ? "위치 확인 중..." : <>🚨 긴급</>}
+        {locating ? "위치 확인 중..." : "지금 쓰레기통 찾기"}
       </button>
 
       {geoError && (
-        <div className="mt-4 max-w-[280px] rounded-lg border border-red-200 bg-white p-3 shadow-md dark:border-red-900/50 dark:bg-zinc-900">
-          <p className="text-xs text-red-600 dark:text-red-400">{geoError}</p>
+        <div className="mt-4 max-w-[280px] rounded-[14px] border border-[#dddddd] bg-white p-3 shadow-[0_0_0_1px_rgba(0,0,0,0.02),0_2px_6px_rgba(0,0,0,0.04),0_4px_8px_rgba(0,0,0,0.1)] dark:border-zinc-800 dark:bg-zinc-900">
+          <p className="text-xs text-[#c13515] dark:text-red-400">{geoError}</p>
           {isMobile && (
             <button
               type="button"
@@ -130,13 +156,79 @@ export default function NearestBinsHome({
                   );
                 }
               }}
-              className="mt-2 w-full rounded-md bg-zinc-900 px-3 py-2 text-xs font-semibold text-white hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
+              className="mt-2 w-full rounded-full bg-[#222222] px-3 py-2 text-xs font-semibold text-white hover:bg-[#3f3f3f] dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
             >
               외부 브라우저에서 열기
             </button>
           )}
         </div>
       )}
+
+      <style jsx>{`
+        .hero-headline {
+          transform-origin: center;
+          animation: hero-headline-grow 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
+        }
+        @keyframes hero-headline-grow {
+          from {
+            transform: scale(0.55);
+          }
+          to {
+            transform: scale(1);
+          }
+        }
+        .hero-photo {
+          opacity: 0;
+          transform: scale(0.3);
+          animation: hero-photo-in 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.3s both;
+        }
+        @keyframes hero-photo-in {
+          from {
+            opacity: 0;
+            transform: scale(0.3);
+          }
+          to {
+            opacity: 1;
+            transform: scale(1);
+          }
+        }
+      `}</style>
+      <style jsx global>{`
+        .hero-lid {
+          animation: hero-lid-open 0.5s ease-out 0.85s both;
+        }
+        @keyframes hero-lid-open {
+          from {
+            transform: rotate(0deg);
+          }
+          to {
+            transform: rotate(-55deg);
+          }
+        }
+        .hero-scrap {
+          opacity: 0;
+          animation: hero-scrap-fly 0.9s ease-out 0.95s both;
+        }
+        .hero-scrap-2 {
+          animation-delay: 1.05s;
+        }
+        .hero-scrap-3 {
+          animation-delay: 1.15s;
+        }
+        @keyframes hero-scrap-fly {
+          0% {
+            opacity: 0;
+            transform: translateY(0) scale(0.6);
+          }
+          30% {
+            opacity: 1;
+          }
+          100% {
+            opacity: 0;
+            transform: translateY(-26px) scale(1);
+          }
+        }
+      `}</style>
     </div>
   );
 }
