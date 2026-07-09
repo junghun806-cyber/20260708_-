@@ -134,7 +134,7 @@ export default function NearestBinsHome({
         disabled={locating}
         className="flex items-center gap-2 rounded-full bg-[#ff385c] px-8 py-4 text-lg font-semibold text-white shadow-[0_2px_10px_rgba(255,56,92,0.35)] hover:bg-[#e00b41] disabled:cursor-not-allowed disabled:bg-[#ffd1da] disabled:shadow-none"
       >
-        {locating ? "위치 확인 중..." : "지금 쓰레기통 찾기"}
+        {locating ? "위치 확인 중..." : "지금 버리러 가기"}
       </button>
 
       {geoError && (
