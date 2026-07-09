@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import type { Coordinates } from "@/types/trashBin";
 import { findNearestBinLocations, type NearestBinLocationResult } from "@/lib/bins";
-import { detectInAppBrowser, openInExternalBrowser, type InAppBrowser } from "@/lib/inAppBrowser";
+import { isMobileUserAgent, openInExternalBrowser } from "@/lib/inAppBrowser";
 
 // Belt-and-suspenders on top of the native `timeout` option: some in-app
 // WebViews (notably KakaoTalk's) never invoke either geolocation callback at
@@ -18,11 +18,20 @@ export default function NearestBinsHome({
 }) {
   const [locating, setLocating] = useState(false);
   const [geoError, setGeoError] = useState<string | null>(null);
-  const [inAppBrowser, setInAppBrowser] = useState<InAppBrowser>(null);
+  const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
-    setInAppBrowser(detectInAppBrowser(navigator.userAgent));
+    setIsMobile(isMobileUserAgent(navigator.userAgent));
   }, []);
+
+  // Most in-app WebViews (Everytime, KakaoTalk, ...) don't identify
+  // themselves in the User-Agent, so we can't reliably tell "definitely an
+  // in-app browser" apart from "real mobile Safari/Chrome that genuinely
+  // failed to get a location fix". Treat any mobile failure as possibly an
+  // in-app browser and offer the escape hatch either way — it's a no-op
+  // button for someone already in a real browser.
+  const mobileGeoErrorHint =
+    "위치 확인에 실패했습니다. 앱 내 브라우저(카카오톡, 에브리타임 등)에서 열었다면 아래 버튼으로 외부 브라우저에서 열어주세요.";
 
   function handleEmergencyClick() {
     setGeoError(null);
@@ -39,11 +48,7 @@ export default function NearestBinsHome({
       if (settled) return;
       settled = true;
       setLocating(false);
-      setGeoError(
-        inAppBrowser
-          ? "이 앱 내 브라우저에서는 위치 확인이 제한됩니다. 아래 버튼으로 외부 브라우저에서 열어주세요."
-          : "현재 위치를 가져오지 못했습니다. 다시 시도해주세요.",
-      );
+      setGeoError(isMobile ? mobileGeoErrorHint : "현재 위치를 가져오지 못했습니다. 다시 시도해주세요.");
     }, GEOLOCATION_FALLBACK_TIMEOUT_MS);
 
     navigator.geolocation.getCurrentPosition(
@@ -68,12 +73,10 @@ export default function NearestBinsHome({
         settled = true;
         window.clearTimeout(fallbackTimer);
         setLocating(false);
-        if (error.code === error.PERMISSION_DENIED) {
-          setGeoError(
-            inAppBrowser
-              ? "이 앱 내 브라우저에서는 위치 확인이 제한됩니다. 아래 버튼으로 외부 브라우저에서 열어주세요."
-              : "위치 권한이 거부되었습니다. 브라우저 설정에서 위치 접근을 허용해주세요.",
-          );
+        if (isMobile) {
+          setGeoError(mobileGeoErrorHint);
+        } else if (error.code === error.PERMISSION_DENIED) {
+          setGeoError("위치 권한이 거부되었습니다. 브라우저 설정에서 위치 접근을 허용해주세요.");
         } else {
           setGeoError("현재 위치를 가져오지 못했습니다. 다시 시도해주세요.");
         }
@@ -104,14 +107,19 @@ export default function NearestBinsHome({
       {geoError && (
         <div className="mt-4 max-w-[280px] rounded-lg border border-red-200 bg-white p-3 shadow-md dark:border-red-900/50 dark:bg-zinc-900">
           <p className="text-xs text-red-600 dark:text-red-400">{geoError}</p>
-          {inAppBrowser && (
+          {isMobile && (
             <button
               type="button"
-              onClick={() => {
-                const opened = openInExternalBrowser(window.location.href);
-                if (!opened) {
+              onClick={async () => {
+                const result = await openInExternalBrowser(window.location.href);
+                if (result === "copied") {
                   setGeoError(
-                    "우측 상단 메뉴(⋮ 또는 …)에서 '다른 브라우저로 열기'를 눌러주세요.",
+                    "링크를 복사했어요. Safari 또는 Chrome 앱을 열어 주소창에 붙여넣어 주세요.",
+                  );
+                } else if (result === "failed") {
+                  window.prompt(
+                    "아래 주소를 복사해서 Safari 또는 Chrome에 붙여넣어 주세요.",
+                    window.location.href,
                   );
                 }
               }}
