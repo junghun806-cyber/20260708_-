@@ -46,16 +46,45 @@ function stripParenthetical(address) {
   return address.replace(/\([^)]*\)/g, "").trim();
 }
 
-async function geocode(address, detail) {
-  for (const candidate of [address, stripParenthetical(address)]) {
-    if (!candidate) continue;
+// The source dataset's 도로명주소 is a bare road name + number with no city
+// or district (e.g. "망우로 196"), which is NOT unique nationwide — Kakao's
+// address/keyword search happily matches it against a same-named road in a
+// different city (e.g. Ansan, Osan, Gwacheon) and returns those coordinates
+// instead. Always scope the query to Seoul + the source 자치구 so matches
+// stay in the right city.
+const SEOUL_BOUNDS = { minLat: 37.4, maxLat: 37.72, minLng: 126.73, maxLng: 127.2 };
+function isInSeoul({ lat, lng }) {
+  return (
+    lat >= SEOUL_BOUNDS.minLat &&
+    lat <= SEOUL_BOUNDS.maxLat &&
+    lng >= SEOUL_BOUNDS.minLng &&
+    lng <= SEOUL_BOUNDS.maxLng
+  );
+}
+
+// Trailing positional words like "앞"/"옆"/"뒤" describe where a bin sits
+// relative to a place, but Kakao's keyword search chokes on them appended to
+// a place name (e.g. "스타벅스 앞" fails where "스타벅스" succeeds) — strip
+// them and retry as a keyword-search fallback.
+function stripTrailingPosition(text) {
+  return text.replace(/\s*(앞|뒤|옆|안|주변|근처|입구)\s*$/u, "").trim();
+}
+
+async function geocode(address, detail, gu) {
+  const scopedAddress = `서울특별시 ${gu} ${address}`;
+  const scopedStripped = `서울특별시 ${gu} ${stripParenthetical(address)}`;
+  for (const candidate of [scopedAddress, scopedStripped]) {
     const hit = await searchAddress(candidate);
-    if (hit) return { ...hit, method: "address", query: candidate };
+    if (hit && isInSeoul(hit)) return { ...hit, method: "address", query: candidate };
   }
-  for (const candidate of [detail, address]) {
+  const scopedDetail = detail ? `서울특별시 ${gu} ${detail}` : null;
+  const scopedDetailCore = detail
+    ? `서울특별시 ${gu} ${stripTrailingPosition(detail)}`
+    : null;
+  for (const candidate of [scopedDetail, scopedDetailCore, scopedAddress]) {
     if (!candidate) continue;
     const hit = await searchKeyword(candidate);
-    if (hit) return { ...hit, method: "keyword", query: candidate };
+    if (hit && isInSeoul(hit)) return { ...hit, method: "keyword", query: candidate };
   }
   return null;
 }
@@ -63,10 +92,13 @@ async function geocode(address, detail) {
 const raw = JSON.parse(await fs.readFile(DATA_PATH, "utf-8"));
 
 // Dedup by 도로명주소 (many bins at the same spot share the same address).
+// Road names are unique within Seoul, so 도로명주소 alone is a safe dedup
+// key, but geocoding still needs the 자치구 to disambiguate against
+// same-named roads in other cities.
 const uniqueAddresses = new Map();
 for (const bin of raw) {
   if (!uniqueAddresses.has(bin.도로명주소)) {
-    uniqueAddresses.set(bin.도로명주소, bin.세부위치);
+    uniqueAddresses.set(bin.도로명주소, { detail: bin.세부위치, gu: bin.자치구 });
   }
 }
 
@@ -75,9 +107,9 @@ console.log(`Geocoding ${uniqueAddresses.size} unique addresses...`);
 const result = {};
 let ok = 0;
 let failed = 0;
-for (const [address, detail] of uniqueAddresses) {
+for (const [address, { detail, gu }] of uniqueAddresses) {
   try {
-    const hit = await geocode(address, detail);
+    const hit = await geocode(address, detail, gu);
     if (hit) {
       result[address] = { lat: hit.lat, lng: hit.lng };
       ok++;
